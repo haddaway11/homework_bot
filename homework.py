@@ -30,6 +30,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
 HOMEWORK_STATUSES = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
@@ -129,6 +130,7 @@ def main():
     check_result = check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
+    error_messages = []
 
     if check_result is False:
         message = 'Аутентификация не удалась'
@@ -149,9 +151,12 @@ def main():
             time.sleep(RETRY_TIME)
 
         except Exception as error:
-            message = f'Сбой в работе программы: {error}'
-            send_message(bot, message)
-            time.sleep(RETRY_TIME)
+            if error not in error_messages:
+                error_messages.append(error)
+                message = f'Сбой в работе программы: {error}'
+                send_message(bot, message)
+                time.sleep(RETRY_TIME)
+
         else:
             time.sleep(RETRY_TIME)
 
