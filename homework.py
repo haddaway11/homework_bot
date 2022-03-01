@@ -4,10 +4,11 @@ try:
     import requests
     import telegram
     import time
+    import exceptions as ex
     from http import HTTPStatus
     from dotenv import load_dotenv
 except ImportError:
-    message = 'ошибка импорта'
+    message = 'Не удалось импортирование модуля или его атрибута'
     raise ImportError(message)
 
 load_dotenv()
@@ -18,7 +19,8 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_TIME = 600
-ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
+HOST = 'https://practicum.yandex.ru/'
+ENDPOINT = HOST + 'api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 logging.basicConfig(
@@ -38,12 +40,6 @@ HOMEWORK_STATUSES = {
 }
 
 
-class NegativeValueException(Exception):
-    """Исключения бота."""
-
-    pass
-
-
 def send_message(bot, message):
     """Отправляет сообщение в Telegram чат."""
     try:
@@ -52,7 +48,7 @@ def send_message(bot, message):
     except Exception:
         message = 'сообщение не отправлено'
         logging.error(message)
-        raise NegativeValueException(message)
+        raise ex.NegativeValueException(message)
 
 
 def get_api_answer(current_timestamp):
@@ -62,10 +58,14 @@ def get_api_answer(current_timestamp):
 
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    except Exception:
-        message = 'API ведет себя незапланированно'
+    except ValueError:
+        message = 'Ошибка в значении'
         logging.error(message)
-        raise NegativeValueException(message)
+        raise ValueError(message)
+    except TypeError:
+        message = 'Не корректный тип данных'
+        logging.error(message)
+        raise TypeError(message)
     try:
         if response.status_code != HTTPStatus.OK:
             message = 'Сервер не отвечает'
@@ -74,7 +74,7 @@ def get_api_answer(current_timestamp):
     except Exception:
         message = 'Ошибка статуса'
         logging.error(message)
-        raise NegativeValueException(message)
+        raise ex.NegativeValueException(message)
     return response.json()
 
 
@@ -91,10 +91,10 @@ def check_response(response):
     elif len(response['homeworks']) == 0:
         message = 'список пуст'
         logging.error(message)
-        raise NegativeValueException(message)
+        raise ex.NegativeValueException(message)
     elif type(response['homeworks']) is not list:
         logging.error(message)
-        raise NegativeValueException('домашки приходят не в виде списка')
+        raise ex.NegativeValueException('домашки приходят не в виде списка')
     homework = response['homeworks']
 
     return homework
@@ -107,7 +107,7 @@ def parse_status(homework):
 
     if homework_status not in HOMEWORK_STATUSES:
         logging.debug('Cтатус отсутствующий в списке!')
-        raise NegativeValueException(
+        raise ex.NegativeValueException(
             'Cтатус отсутствующий в списке!'
         )
 
