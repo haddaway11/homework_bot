@@ -7,8 +7,8 @@ try:
     import exceptions as ex
     from http import HTTPStatus
     from dotenv import load_dotenv
-except ImportError:
-    message = 'Не удалось импортирование модуля или его атрибута'
+except ImportError as error:
+    message = f'Не удалось импортирование модуля или его атрибута {error}'
     raise ImportError(message)
 
 load_dotenv()
